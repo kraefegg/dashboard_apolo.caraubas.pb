@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard PRAD | UFV Rio do Peixe I e II — Junho/2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+:root{
+  --green-900:#0d3b23; --green-800:#12522f; --green-700:#1b6b3c; --green-600:#2f8f52;
+  --green-500:#4caf6e; --green-100:#e6f4ea; --amber:#e0a638; --red:#c9503f; --blue:#3d7ab5;
+  --bg:#f2f5f2; --card:#ffffff; --text:#1c2b22; --text-sec:#5c6b62; --radius:12px;
+  --gap:18px; --shadow:0 2px 10px rgba(13,59,35,.08);
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);}
+.container{max-width:1440px;margin:0 auto;padding:20px;}
+.header{
+  background:linear-gradient(120deg,var(--green-900),var(--green-700));
+  color:#fff;border-radius:var(--radius);padding:24px 28px;margin-bottom:var(--gap);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+  box-shadow:var(--shadow);
+}
+.header h1{margin:0;font-size:22px;font-weight:700;}
+.header p{margin:4px 0 0;font-size:13px;color:#cfe8d9;}
+.header .badge{background:rgba(255,255,255,.15);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;}
+.tag-row{display:flex;gap:8px;flex-wrap:wrap;}
+.tabs{display:flex;gap:8px;margin-bottom:var(--gap);flex-wrap:wrap;}
+.tab-btn{background:var(--card);border:1px solid #d8e4dc;color:var(--text-sec);padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+.tab-btn.active{background:var(--green-700);color:#fff;border-color:var(--green-700);}
+.tab-btn:hover{border-color:var(--green-600);}
+.tab-content{display:none;}
+.tab-content.active{display:block;animation:fade .25s ease;}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--gap);margin-bottom:var(--gap);}
+.kpi-card{background:var(--card);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);border-left:4px solid var(--green-600);}
+.kpi-card.amber{border-left-color:var(--amber);}
+.kpi-card.red{border-left-color:var(--red);}
+.kpi-card.blue{border-left-color:var(--blue);}
+.kpi-label{font-size:11.5px;color:var(--text-sec);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600;}
+.kpi-value{font-size:26px;font-weight:800;color:var(--green-900);margin-bottom:4px;}
+.kpi-sub{font-size:12px;color:var(--text-sec);}
+.trend{font-size:12px;font-weight:700;}
+.trend.up{color:var(--green-600);} .trend.flat{color:var(--text-sec);} .trend.down{color:var(--red);}
+.grid-2{display:grid;grid-template-columns:1.3fr 1fr;gap:var(--gap);margin-bottom:var(--gap);}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);margin-bottom:var(--gap);}
+@media(max-width:900px){.grid-2,.grid-3{grid-template-columns:1fr;}}
+.card{background:var(--card);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);}
+.card h3{margin:0 0 4px;font-size:14.5px;font-weight:700;color:var(--green-900);}
+.card .subtitle{font-size:12px;color:var(--text-sec);margin-bottom:14px;}
+canvas{max-height:300px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{text-align:left;padding:9px 10px;background:var(--green-100);color:var(--green-900);font-weight:700;font-size:11.5px;text-transform:uppercase;letter-spacing:.3px;}
+tbody td{padding:8px 10px;border-bottom:1px solid #eef2ef;}
+tbody tr:hover{background:#f7faf8;}
+.pill{padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:700;display:inline-block;}
+.pill.green{background:#e2f3e6;color:var(--green-700);}
+.pill.amber{background:#fbf0dc;color:#9a6b13;}
+.pill.red{background:#fbe4e0;color:var(--red);}
+.pill.blue{background:#e2ecf7;color:var(--blue);}
+.arrow{font-weight:800;}
+.footer{text-align:center;font-size:12px;color:var(--text-sec);padding:20px 0;}
+.note{background:#fbf6e8;border-left:4px solid var(--amber);padding:12px 16px;border-radius:8px;font-size:12.5px;color:#6b5416;margin-bottom:var(--gap);}
+.legend-swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;}
+.two-col-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;font-size:13px;}
+.two-col-list li{margin-bottom:4px;}
+.section-title{font-size:15px;font-weight:800;color:var(--green-900);margin:4px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--green-100);}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div>
+      <h1>🌱 PRAD — UFV Rio do Peixe I e II | Caraúbas-PB</h1>
+      <p>Relatório de Monitoramento da Reposição Florestal · Campanha de Referência: <b>Junho/2026</b> · Bragagnoli Ambiental / EKORA Consultoria Ambiental</p>
+    </div>
+    <div class="tag-row">
+      <span class="badge">Diretor Técnico: Railson N. de Arruda — CREA-PB 1619008858</span>
+      <span class="badge">Área Total: 4,74 ha</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('overview')">📊 Visão Geral</button>
+    <button class="tab-btn" onclick="showTab('species')">🌳 Espécies & Sobrevivência</button>
+    <button class="tab-btn" onclick="showTab('factors')">⚠️ Fatores Supervenientes</button>
+    <button class="tab-btn" onclick="showTab('manejo')">🔧 Manejo & Ações</button>
+    <button class="tab-btn" onclick="showTab('areas')">🗺️ Áreas & Cronograma</button>
+  </div>
+
+  <!-- ===================== TAB 1: OVERVIEW ===================== -->
+  <div id="overview" class="tab-content active">
+
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">Sobrevivência — Nativas</div>
+        <div class="kpi-value">~70%</div>
+        <div class="trend flat">→ estável vs. Maio/26</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label">Sobrevivência — Não Nativas</div>
+        <div class="kpi-value">~30%</div>
+        <div class="trend flat">→ estável vs. Maio/26</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Regeneração Natural</div>
+        <div class="kpi-value">Elevada</div>
+        <div class="trend up">▲ mantida desde Fev/26</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Área Total Monitorada</div>
+        <div class="kpi-value">4,74 ha</div>
+        <div class="kpi-sub">12 sub-áreas (A1–A20)</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Matriz de Risco Ambiental</div>
+        <div class="kpi-value">3 Monitorados</div>
+        <div class="kpi-sub">Nova estiagem, herbivoria, competição por gramíneas</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Pragas / Herbivoria</div>
+        <div class="kpi-value">Moderada</div>
+        <div class="trend up" style="color:var(--green-600)">▼ de Moderada/Alta (Maio)</div>
+      </div>
+    </div>
+
+    <div class="note">📌 <b>Conclusão técnica:</b> Não foram verificadas alterações significativas frente a Maio/2026. Área em fase de estabilidade ecológica. Fatores supervenientes (estiagem, herbivoria) não caracterizam falha de implantação. Reposição de mudas <b>não recomendada</b> neste momento.</div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Sobrevivência das Mudas — Maio × Junho/2026</h3>
+        <div class="subtitle">Comparação percentual por grupo de espécies</div>
+        <canvas id="chartSurvival"></canvas>
+      </div>
+      <div class="card">
+        <h3>Distribuição dos Fatores no Monitoramento</h3>
+        <div class="subtitle">Composição relativa (Figura 5)</div>
+        <canvas id="chartDonut"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Indicadores Integrados de Desempenho Ambiental</h3>
+        <div class="subtitle">Avaliação qualitativa — Junho/2026 (escala 0–120)</div>
+        <canvas id="chartIndicators"></canvas>
+      </div>
+      <div class="card">
+        <h3>Evolução Histórica do Monitoramento</h3>
+        <div class="subtitle">Linha do tempo das campanhas — Quadro 1</div>
+        <table>
+          <thead><tr><th>Campanha</th><th>Situação Geral</th><th>Observações</th></tr></thead>
+          <tbody id="tblHistorico"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 2: SPECIES ===================== -->
+  <div id="species" class="tab-content">
+
+    <div class="section-title">Desempenho por Grupo de Espécies</div>
+    <div class="grid-3">
+      <div class="card">
+        <h3>Espécies Nativas</h3>
+        <div class="subtitle">Melhor desempenho do PRAD</div>
+        <div class="kpi-value" style="font-size:34px">70%</div>
+        <ul style="font-size:13px;color:var(--text-sec)">
+          <li>Manutenção da maioria dos indivíduos</li>
+          <li>Emissão de novas brotações</li>
+          <li>Recuperação parcial da copa</li>
+          <li>Maior plasticidade ecológica</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Espécies Não Nativas</h3>
+        <div class="subtitle">Menor adaptação ao Semiárido</div>
+        <div class="kpi-value" style="font-size:34px;color:var(--amber)">30%</div>
+        <ul style="font-size:13px;color:var(--text-sec)">
+          <li>Maior suscetibilidade ao estresse hídrico</li>
+          <li>Maior demanda evaporativa</li>
+          <li>Menor plasticidade ecológica</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Rebrota & Regeneração</h3>
+        <div class="subtitle">Indicadores fisiológicos positivos</div>
+        <p style="font-size:13px;"><span class="pill green">Rebrota: Presente</span></p>
+        <p style="font-size:13px;"><span class="pill green">Regeneração Natural: Mantida</span></p>
+        <p style="font-size:12.5px;color:var(--text-sec);margin-top:10px">Segundo Larcher (2006), rebrota evidencia sistema radicular funcional mesmo após perda foliar significativa — não configura perda definitiva.</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Tabela 1 — Comparação de Indicadores Maio × Junho/2026</h3>
+        <table>
+          <thead><tr><th>Indicador</th><th>Maio</th><th>Junho</th><th>Tendência</th></tr></thead>
+          <tbody id="tblComparacao"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Tabela 4 — Indicadores Ecológicos</h3>
+        <table>
+          <thead><tr><th>Indicador</th><th>Maio</th><th>Junho</th></tr></thead>
+          <tbody id="tblEcologicos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Situação das Ações de Manejo — Tabela 3</h3>
+      <div class="subtitle">Status de execução por atividade</div>
+      <table>
+        <thead><tr><th>Ação</th><th>Situação</th></tr></thead>
+        <tbody id="tblAcoes"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 3: FATORES SUPERVENIENTES ===================== -->
+  <div id="factors" class="tab-content">
+
+    <div class="note">⚠️ Fatores supervenientes: eventos posteriores à implantação, imprevisíveis, sem nexo causal com falha técnica de execução (ABNT NBR ISO 31000; IBAMA, 2011). O contrato do PRAD prevê apenas controle de formigas cortadeiras — não contempla controle de herbívoros desfolhadores.</div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Intensidade dos Fatores Supervenientes</h3>
+        <div class="subtitle">Escala: 1=Baixo · 2=Moderado · 3=Médio · 4=Alto · 5=Muito Alto</div>
+        <canvas id="chartFactorsBar"></canvas>
+      </div>
+      <div class="card">
+        <h3>Matriz de Risco Ambiental — Quadro 3</h3>
+        <table>
+          <thead><tr><th>Evento</th><th>Probabilidade</th><th>Impacto</th><th>Situação</th></tr></thead>
+          <tbody id="tblRisco"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Quadro 2 — Painel de Indicadores Ambientais Consolidado (Maio–Junho/2026)</h3>
+      <table>
+        <thead><tr><th>Fator</th><th>Influência Observada</th><th>Avaliação Técnica</th></tr></thead>
+        <tbody id="tblPainel"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Fatores Supervenientes Consolidados — Influência</h3>
+      <table>
+        <thead><tr><th>Fator</th><th>Influência</th></tr></thead>
+        <tbody id="tblFatoresConsolidados"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 4: MANEJO ===================== -->
+  <div id="manejo" class="tab-content">
+
+    <div class="section-title">Evolução das Atividades de Manejo (Figura 3)</div>
+    <div class="card">
+      <h3>Intensidade Relativa das Ações — Maio × Junho</h3>
+      <div class="subtitle">Irrigação, manutenção hidráulica, monitoramento, capina/roçagem, inspeções técnicas</div>
+      <canvas id="chartManejo"></canvas>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Escopo do Monitoramento — Junho/2026</h3>
+        <ul class="two-col-list">
+          <li>✅ Inspeção técnica das áreas recuperadas</li>
+          <li>✅ Avaliação da sobrevivência das mudas</li>
+          <li>✅ Identificação de rebrotas</li>
+          <li>✅ Verificação da regeneração natural</li>
+          <li>✅ Avaliação da cobertura vegetal espontânea</li>
+          <li>✅ Registro de evidências fotográficas</li>
+          <li>✅ Acompanhamento de indivíduos atacados</li>
+          <li>✅ Capina seletiva / coroamento / roçagem</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Fora do Escopo Contratual</h3>
+        <p style="font-size:13px;color:var(--text-sec)">O plano executivo do PRAD <b>não contempla</b>:</p>
+        <ul style="font-size:13px;color:var(--text-sec)">
+          <li>Controle fitossanitário de insetos herbívoros desfolhadores</li>
+          <li>Reposição automática de mudas por fatores supervenientes</li>
+          <li>Controle previsto apenas para formigas cortadeiras</li>
+        </ul>
+        <p style="font-size:12.5px;margin-top:12px;">Eventuais intervenções extraordinárias dependem de avaliação técnica específica + manifestação formal da contratante e do órgão ambiental.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===================== TAB 5: AREAS & CRONOGRAMA ===================== -->
+  <div id="areas" class="tab-content">
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Áreas Monitoradas — Coordenadas e Extensão</h3>
+        <table>
+          <thead><tr><th>Área</th><th>Latitude (S)</th><th>Longitude (W)</th><th>Área (ha)</th></tr></thead>
+          <tbody id="tblAreas"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h3>Distribuição de Área por Talhão (ha)</h3>
+        <canvas id="chartAreas"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Cronograma de Monitoramento (12 campanhas)</h3>
+      <div class="subtitle">✓ = concluído</div>
+      <table>
+        <thead><tr><th>Monitoramento</th><th>Data Prevista</th><th>Status</th></tr></thead>
+        <tbody id="tblCronograma"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Dashboard gerado a partir do Relatório Técnico de Monitoramento — UFV Rio do Peixe I e II — Junho/2026 · Bragagnoli Ambiental (CTF/AIDA 8805586) · Diretor Técnico: Railson Nogueira de Arruda, Eng. Ambiental, CREA-PB RNP 1619008858, ART PB20250690039
+  </div>
+
+</div>
+
+<script>
+function showTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+Chart.defaults.font.family = "'Segoe UI',Arial,sans-serif";
+Chart.defaults.color = '#5c6b62';
+const GREEN='#2f8f52', GREEN_D='#12522f', AMBER='#e0a638', RED='#c9503f', BLUE='#3d7ab5', GREEN_L='#7bc794';
+
+// --- Chart 1: Survival comparison ---
+new Chart(document.getElementById('chartSurvival'), {
+  type:'bar',
+  data:{
+    labels:['Espécies Nativas','Espécies Não Nativas'],
+    datasets:[
+      {label:'Maio', data:[70,30], backgroundColor:BLUE, borderRadius:6},
+      {label:'Junho', data:[70,30], backgroundColor:GREEN, borderRadius:6}
+    ]
+  },
+  options:{responsive:true, scales:{y:{beginAtZero:true,max:80,ticks:{callback:v=>v+'%'}}}, plugins:{legend:{position:'bottom'}}}
+});
+
+// --- Chart 2: Donut fatores ---
+new Chart(document.getElementById('chartDonut'), {
+  type:'doughnut',
+  data:{
+    labels:['Ações de manejo executadas','Déficit hídrico regional','Herbivoria','Irrigação emergencial','Rebrota das mudas'],
+    datasets:[{data:[30,12,15,25,18], backgroundColor:[GREEN_D,AMBER,RED,BLUE,GREEN_L]}]
+  },
+  options:{responsive:true, plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}}}
+});
+
+// --- Chart 3: Indicadores integrados (Figura 4) ---
+new Chart(document.getElementById('chartIndicators'), {
+  type:'bar',
+  data:{
+    labels:['Funcionamento da irrigação','Estabilidade do plantio','Rebrota observada','Controle operacional','Herbivoria','Déficit hídrico'],
+    datasets:[{data:[100,90,85,92,35,25], backgroundColor:[GREEN,GREEN,GREEN_L,GREEN,AMBER,AMBER], borderRadius:6}]
+  },
+  options:{indexAxis:'y', responsive:true, plugins:{legend:{display:false}}, scales:{x:{max:120}}}
+});
+
+// --- Historico table ---
+const historico = [
+ ['Fevereiro/2026','Plantio concluído','Início da fase de estabelecimento'],
+ ['Março/2026','Irrigação intensiva','Funcionamento contínuo do sistema'],
+ ['Abril/2026','Continuidade da irrigação','Manutenções preventivas de motobombas e mangueiras'],
+ ['Maio/2026','Encerramento da irrigação emergencial','Consolidação das mudas sobreviventes'],
+ ['Junho/2026','Estabilidade do cenário','Sem alterações significativas nos indicadores'],
+];
+document.getElementById('tblHistorico').innerHTML = historico.map(r=>
+ `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+
+// --- Comparacao Maio x Junho (Tabela 1) ---
+const comp = [
+ ['Mortalidade','Estável','Estável','flat'],
+ ['Regeneração Natural','Elevada','Elevada','flat'],
+ ['Cobertura Vegetal','Estável','Estável','flat'],
+ ['Pragas','Moderada/Alta','Moderada','down'],
+ ['Rebrota','Presente','Presente','flat'],
+ ['Necessidade de Irrigação','Não','Não','flat'],
+ ['Necessidade de Capina','Sim','Sim','flat'],
+ ['Necessidade de Coroamento','Sim','Sim','flat'],
+];
+const arrow = t => t==='down' ? '<span class="arrow" style="color:var(--green-600)">↓</span>' : '<span class="arrow" style="color:#5c6b62">→</span>';
+document.getElementById('tblComparacao').innerHTML = comp.map(r=>
+ `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${arrow(r[3])}</td></tr>`).join('');
+
+// --- Indicadores ecologicos (Tabela 4) ---
+const ecolog = [
+ ['Regeneração Natural','Favorável','Favorável'],
+ ['Rebrota','Favorável','Favorável'],
+ ['Cobertura do Solo','Favorável','Favorável'],
+ ['Controle de Processos Erosivos','Favorável','Favorável'],
+ ['Serviços Ecossistêmicos','Em recuperação','Em recuperação'],
+];
+document.getElementById('tblEcologicos').innerHTML = ecolog.map(r=>
+ `<tr><td>${r[0]}</td><td><span class="pill green">${r[1]}</span></td><td><span class="pill green">${r[2]}</span></td></tr>`).join('');
+
+// --- Acoes de manejo (Tabela 3) ---
+const acoes = [
+ ['Irrigação emergencial','Concluída','green'],
+ ['Manutenção das motobombas','Executada','green'],
+ ['Reparo das mangueiras','Executado','green'],
+ ['Reinstalação das bombas','Executada','green'],
+ ['Capina seletiva','Em execução','amber'],
+ ['Coroamento','Em execução','amber'],
+ ['Monitoramento','Contínuo','blue'],
+];
+document.getElementById('tblAcoes').innerHTML = acoes.map(r=>
+ `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[1]}</span></td></tr>`).join('');
+
+// --- Chart Fatores Supervenientes (bar horizontal) ---
+new Chart(document.getElementById('chartFactorsBar'), {
+  type:'bar',
+  data:{
+    labels:['Estiagem prolongada','Elevadas temperaturas','Herbivoria (lagartas/gafanhotos)','Competição por vegetação espontânea','Necessidade de roçagem','Falhas hidráulicas pontuais'],
+    datasets:[{data:[5,4,4,3,3,2], backgroundColor:[RED,RED,AMBER,AMBER,AMBER,BLUE], borderRadius:6}]
+  },
+  options:{indexAxis:'y', responsive:true, plugins:{legend:{display:false}}, scales:{x:{max:5}}}
+});
+
+// --- Matriz de risco (Quadro 3) ---
+const risco = [
+ ['Mortalidade adicional','Baixa','Média','Controlado','green'],
+ ['Nova estiagem','Média','Alta','Monitorado','amber'],
+ ['Herbivoria','Média','Média','Monitorado','amber'],
+ ['Competição por gramíneas','Alta','Média','Em manejo','amber'],
+ ['Erosão','Baixa','Baixa','Sem evidências','green'],
+];
+document.getElementById('tblRisco').innerHTML = risco.map(r=>
+ `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td><span class="pill ${r[4]}">${r[3]}</span></td></tr>`).join('');
+
+// --- Painel indicadores (Quadro 2) ---
+const painel = [
+ ['Irrigação inicial','Redução do estresse pós-plantio','Medida executada'],
+ ['Manutenção hidráulica','Garantia operacional','Ação preventiva/corretiva realizada'],
+ ['Ambiente semiárido','Restrição hídrica natural','Condicionante ambiental'],
+ ['Espécies implantadas','Diferentes respostas','Maior adaptação das nativas'],
+ ['Vegetação concorrente','Competição localizada','Manejo iniciado'],
+ ['Herbivoria','Danos foliares e brotações','Fator superveniente'],
+ ['Rebrota','Recuperação fisiológica de alguns indivíduos','Indicador positivo'],
+];
+document.getElementById('tblPainel').innerHTML = painel.map(r=>
+ `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('');
+
+// --- Fatores consolidados influencia ---
+const fcons = [
+ ['Estiagem prolongada','Muito alta','red'],
+ ['Elevadas temperaturas','Alta','red'],
+ ['Herbivoria','Alta','amber'],
+ ['Competição com vegetação espontânea','Moderada','amber'],
+ ['Necessidade de roçagem','Moderada','amber'],
+ ['Manutenção do sistema de irrigação','Controlada','green'],
+ ['Interrupções operacionais','Pontuais','green'],
+];
+document.getElementById('tblFatoresConsolidados').innerHTML = fcons.map(r=>
+ `<tr><td>${r[0]}</td><td><span class="pill ${r[2]}">${r[1]}</span></td></tr>`).join('');
+
+// --- Chart Manejo (Figura 3) ---
+new Chart(document.getElementById('chartManejo'), {
+  type:'line',
+  data:{
+    labels:['Irrigação','Manutenção hidráulica','Monitoramento','Capina/roçagem','Inspeções técnicas'],
+    datasets:[
+      {label:'Maio', data:[5,2,2,2,4], borderColor:BLUE, backgroundColor:BLUE+'30', tension:.4, fill:true},
+      {label:'Junho', data:[2,2,5,5,5], borderColor:GREEN, backgroundColor:GREEN+'30', tension:.4, fill:true}
+    ]
+  },
+  options:{responsive:true, scales:{y:{beginAtZero:true,max:6}}, plugins:{legend:{position:'bottom'}}}
+});
+
+// --- Areas monitoradas ---
+const areas = [
+ ['A1',"7°42'45\"","36°32'38\"",0.65],
+ ['A4',"7°42'43\"","36°32'45\"",0.36],
+ ['A5',"7°42'46\"","36°32'54\"",0.10],
+ ['A6',"7°42'53\"","36°33'12\"",0.04],
+ ['A9',"7°42'57\"","36°32'25\"",0.11],
+ ['A10',"7°43'07\"","36°32'21\"",0.10],
+ ['A12',"7°42'57\"","36°32'25\"",0.33],
+ ['A13',"7°42'51\"","36°32'38\"",0.88],
+ ['A14',"7°42'49\"","36°32'44\"",0.33],
+ ['A15',"7°42'53\"","36°32'51\"",0.26],
+ ['A16',"7°42'52\"","36°32'52\"",0.17],
+ ['A17',"7°42'52\"","36°32'56\"",0.26],
+ ['A20',"7°43'10\"","36°33'13\"",1.15],
+];
+document.getElementById('tblAreas').innerHTML = areas.map(r=>
+ `<tr><td><b>${r[0]}</b></td><td>${r[1]} S</td><td>${r[2]} W</td><td>${r[3].toFixed(2)} ha</td></tr>`).join('')
+ + `<tr style="background:var(--green-100);font-weight:700"><td colspan="3">TOTAL</td><td>4,74 ha</td></tr>`;
+
+new Chart(document.getElementById('chartAreas'), {
+  type:'bar',
+  data:{
+    labels: areas.map(a=>a[0]),
+    datasets:[{data: areas.map(a=>a[3]), backgroundColor:GREEN, borderRadius:5}]
+  },
+  options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{title:{display:true,text:'hectares'}}}}
+});
+
+// --- Cronograma ---
+const crono = [
+ ['Monitoramento 1','15/12/2025',true],
+ ['Monitoramento 2','15/01/2026',true],
+ ['Monitoramento 3','15/02/2026',true],
+ ['Monitoramento 4','15/03/2026',true],
+ ['Monitoramento 5','15/04/2026',true],
+ ['Monitoramento 6','15/05/2026',true],
+ ['Monitoramento 7','15/06/2026',true],
+ ['Monitoramento 8','15/07/2026',false],
+ ['Monitoramento 9','15/08/2026',false],
+ ['Monitoramento 10','15/09/2026',false],
+ ['Monitoramento 11','15/10/2026',false],
+ ['Monitoramento 12','15/11/2026',false],
+];
+document.getElementById('tblCronograma').innerHTML = crono.map(r=>
+ `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]?'<span class="pill green">✓ Concluído</span>':'<span class="pill blue">Programado</span>'}</td></tr>`).join('');
+</script>
+</body>
+</html>
